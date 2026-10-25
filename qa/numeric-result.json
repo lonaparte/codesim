@@ -1,0 +1,41 @@
+{
+  "workload": {
+    "signals": 24,
+    "chunks": 200,
+    "pointsPerChunk": 250,
+    "pointsPerSignal": 50000
+  },
+  "dataEqual": true,
+  "timingMs": {
+    "before": [
+      3576.2010499999997,
+      3484.525238,
+      3321.806461,
+      6506.656652,
+      8349.073733000001
+    ],
+    "after": [
+      43.14214600000014,
+      47.36770699999943,
+      43.89827900000091,
+      46.06279100000029,
+      39.979325000000244
+    ]
+  },
+  "medianMs": {
+    "before": 3576.2010499999997,
+    "after": 43.89827900000091
+  },
+  "speedup": 81.46563217204769,
+  "checks": [
+    "stream equality",
+    "array/descriptor identity",
+    "no mutation of incoming chunks",
+    "reset/pending",
+    "incremental extrema",
+    "spike preservation",
+    "visible binary search",
+    "path gaps",
+    "topology identity"
+  ]
+}

@@ -1,0 +1,173 @@
+{
+  "sha": "08853cb9788b01fd36b1c799b2ff0c3c6889404c",
+  "checks": [
+    {
+      "name": "real Python backend starts",
+      "pass": true
+    },
+    {
+      "name": "topology drag changes position",
+      "pass": true,
+      "detail": {
+        "before": "z-index: 0; transform: translate(420px, 100px); pointer-events: all; visibility: visible;",
+        "dragged": "z-index: 1000; transform: translate(880.873px, 195.053px); pointer-events: all; visibility: visible;"
+      }
+    },
+    {
+      "name": "opening Signals preserves topology",
+      "pass": false
+    },
+    {
+      "name": "streamed data matches final snapshot",
+      "pass": false,
+      "detail": {
+        "chunks": 401,
+        "final": {
+          "at": 24228.800000000047,
+          "signals": 23,
+          "points": 20003,
+          "streamEqualsFinal": false
+        },
+        "renders": 804,
+        "firstPaintMs": 5.900000000023283,
+        "longTasks": [
+          54,
+          116
+        ],
+        "wallMs": 23336.400000000023,
+        "totalMs": 24229
+      }
+    },
+    {
+      "name": "four default plots render",
+      "pass": true
+    },
+    {
+      "name": "waveform paths render",
+      "pass": true
+    },
+    {
+      "name": "simulation preserves topology drag",
+      "pass": false
+    },
+    {
+      "name": "viewer receives no streaming chunks",
+      "pass": false,
+      "detail": {
+        "counts": {
+          "backendInfo": 2,
+          "backendStatus": 4,
+          "systemSnapshot": 3,
+          "simulation.started": 1,
+          "simulation.chunk": 401,
+          "simulation.completed": 1
+        },
+        "snapshots": [
+          {
+            "type": "systemSnapshot",
+            "bytes": 5663,
+            "signals": 0
+          },
+          {
+            "type": "systemSnapshot",
+            "bytes": 5663,
+            "signals": 0
+          },
+          {
+            "type": "systemSnapshot",
+            "bytes": 13995609,
+            "signals": 23
+          }
+        ]
+      }
+    },
+    {
+      "name": "zoom changes time range",
+      "pass": true,
+      "detail": {
+        "range": "0–2 s",
+        "zoom": "0.50–1.50 s"
+      }
+    },
+    {
+      "name": "reset restores time range",
+      "pass": true
+    },
+    {
+      "name": "derived signal is added",
+      "pass": true
+    },
+    {
+      "name": "small-signal snapshot received",
+      "pass": true
+    },
+    {
+      "name": "snapshot followed by later chunk retains earlier time range",
+      "pass": true,
+      "detail": {
+        "snapshotRange": "0–0.10 s",
+        "afterChunkRange": "0–0.20 s",
+        "expectedStart": 0,
+        "laterChunkStart": 0.1
+      }
+    },
+    {
+      "name": "backend stopped",
+      "pass": true
+    }
+  ],
+  "errors": [],
+  "vscode": "1.143.1",
+  "node": "v24.21.0",
+  "python": "Python 3.12.15",
+  "simulation": {
+    "chunks": 401,
+    "final": {
+      "at": 24228.800000000047,
+      "signals": 23,
+      "points": 20003,
+      "streamEqualsFinal": false
+    },
+    "renders": 804,
+    "firstPaintMs": 5.900000000023283,
+    "longTasks": [
+      54,
+      116
+    ],
+    "wallMs": 23336.400000000023,
+    "totalMs": 24229
+  },
+  "viewer": {
+    "counts": {
+      "backendInfo": 2,
+      "backendStatus": 4,
+      "systemSnapshot": 3,
+      "simulation.started": 1,
+      "simulation.chunk": 401,
+      "simulation.completed": 1
+    },
+    "snapshots": [
+      {
+        "type": "systemSnapshot",
+        "bytes": 5663,
+        "signals": 0
+      },
+      {
+        "type": "systemSnapshot",
+        "bytes": 5663,
+        "signals": 0
+      },
+      {
+        "type": "systemSnapshot",
+        "bytes": 13995609,
+        "signals": 23
+      }
+    ]
+  },
+  "resumeProbe": {
+    "snapshotRange": "0–0.10 s",
+    "afterChunkRange": "0–0.20 s",
+    "expectedStart": 0,
+    "laterChunkStart": 0.1
+  }
+}

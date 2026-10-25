@@ -1,0 +1,35 @@
+{
+  "chunks": 401,
+  "signals": 23,
+  "pointsPerSignal": 20003,
+  "seconds": 45.24784424299969,
+  "differences": [
+    {
+      "id": "bus-1-q-vsg-terminal",
+      "field": "values",
+      "streamLength": 20003,
+      "finalLength": 20003,
+      "maxAbsDifference": 2.220446049250313e-16,
+      "allclose1e_9": true,
+      "firstMismatch": 0
+    },
+    {
+      "id": "bus-2-q-infinite-bus",
+      "field": "values",
+      "streamLength": 20003,
+      "finalLength": 20003,
+      "maxAbsDifference": 2.220446049250313e-16,
+      "allclose1e_9": true,
+      "firstMismatch": 4
+    },
+    {
+      "id": "bus-1-theta-vsg-terminal",
+      "field": "values",
+      "streamLength": 20003,
+      "finalLength": 20003,
+      "maxAbsDifference": 360.00000000000006,
+      "allclose1e_9": false,
+      "firstMismatch": 5650
+    }
+  ]
+}

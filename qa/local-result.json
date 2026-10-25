@@ -1,0 +1,19 @@
+{
+  "head": "5b8499241406b8b7e6543dc9fa8fb47641f0c4ea",
+  "base": "08853cb9788b01fd36b1c799b2ff0c3c6889404c",
+  "npm_ci": "passed",
+  "build": "passed",
+  "lint": "passed",
+  "vsix_package": "passed",
+  "python_head": {
+    "passed": 20,
+    "failed": 5,
+    "subtests_passed": 13
+  },
+  "python_base_core": {
+    "passed": 2,
+    "failed": 5
+  },
+  "preexisting_failure": "TwoBusSystem does not implement abstract eventHandler",
+  "numpy_scipy_sympy": "2.3.5 1.17.0 1.14.0"
+}

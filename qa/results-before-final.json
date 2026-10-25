@@ -1,0 +1,239 @@
+{
+  "sha": "08853cb9788b01fd36b1c799b2ff0c3c6889404c",
+  "checks": [
+    {
+      "name": "real Python backend starts",
+      "pass": true
+    },
+    {
+      "name": "topology drag changes position",
+      "pass": true,
+      "detail": {
+        "before": "z-index: 0; transform: translate(420px, 100px); pointer-events: all; visibility: visible;",
+        "dragged": "z-index: 1000; transform: translate(1133.96px, 195.053px); pointer-events: all; visibility: visible;"
+      }
+    },
+    {
+      "name": "opening Signals preserves topology",
+      "pass": false
+    },
+    {
+      "name": "streamed data matches final snapshot",
+      "pass": false,
+      "detail": {
+        "chunks": 401,
+        "final": {
+          "at": 51266,
+          "signals": 23,
+          "points": 20003,
+          "streamEqualsFinal": false,
+          "differences": [
+            {
+              "id": "bus-1-theta-vsg-terminal",
+              "field": "values",
+              "streamLength": 20003,
+              "finalLength": 20003,
+              "maxDifference": 360.00000000000006,
+              "maxAngleAdjustedDifference": 5.684341886080802e-14
+            }
+          ]
+        },
+        "renders": 805,
+        "firstPaintMs": 22.300000000017462,
+        "longTasks": [
+          91,
+          189
+        ],
+        "wallMs": 50171.20000000001,
+        "totalMs": 51224
+      }
+    },
+    {
+      "name": "four default plots render",
+      "pass": true
+    },
+    {
+      "name": "waveform paths render",
+      "pass": true
+    },
+    {
+      "name": "simulation preserves topology drag",
+      "pass": false
+    },
+    {
+      "name": "viewer receives no streaming chunks",
+      "pass": false,
+      "detail": {
+        "counts": {
+          "backendInfo": 2,
+          "backendStatus": 4,
+          "systemSnapshot": 3,
+          "simulation.started": 1,
+          "simulation.chunk": 401,
+          "simulation.completed": 1
+        },
+        "snapshots": [
+          {
+            "type": "systemSnapshot",
+            "bytes": 5663,
+            "signals": 0
+          },
+          {
+            "type": "systemSnapshot",
+            "bytes": 5663,
+            "signals": 0
+          },
+          {
+            "type": "systemSnapshot",
+            "bytes": 13995131,
+            "signals": 23
+          }
+        ]
+      }
+    },
+    {
+      "name": "zoom changes time range",
+      "pass": true,
+      "detail": {
+        "range": "0–2 s",
+        "zoom": "0.50–1.50 s"
+      }
+    },
+    {
+      "name": "reset restores time range",
+      "pass": true
+    },
+    {
+      "name": "derived signal is added",
+      "pass": true
+    },
+    {
+      "name": "small-signal snapshot received",
+      "pass": true
+    },
+    {
+      "name": "snapshot followed by later chunk retains earlier time range",
+      "pass": true,
+      "detail": {
+        "snapshotRange": "0–0.10 s",
+        "afterChunkRange": "0–0.20 s",
+        "expectedStart": 0,
+        "laterChunkStart": 0.1
+      }
+    },
+    {
+      "name": "actual mid-run panel reopening preserves prefix",
+      "pass": true,
+      "detail": {
+        "observedRanges": [
+          "0–0.06 s",
+          "0–0.07 s",
+          "0–0.08 s",
+          "0–0.09 s",
+          "0–0.10 s",
+          "0–0.11 s",
+          "0–0.12 s",
+          "0–0.13 s",
+          "0–0.14 s",
+          "0–0.15 s",
+          "0–0.16 s",
+          "0–0.17 s",
+          "0–0.18 s",
+          "0–0.19 s",
+          "0–0.20 s",
+          "0–0.21 s"
+        ],
+        "finalRange": "0–2 s"
+      }
+    },
+    {
+      "name": "backend stopped",
+      "pass": true
+    }
+  ],
+  "errors": [],
+  "vscode": "1.143.1",
+  "node": "v24.21.0",
+  "python": "Python 3.12.15",
+  "simulation": {
+    "chunks": 401,
+    "final": {
+      "at": 51266,
+      "signals": 23,
+      "points": 20003,
+      "streamEqualsFinal": false,
+      "differences": [
+        {
+          "id": "bus-1-theta-vsg-terminal",
+          "field": "values",
+          "streamLength": 20003,
+          "finalLength": 20003,
+          "maxDifference": 360.00000000000006,
+          "maxAngleAdjustedDifference": 5.684341886080802e-14
+        }
+      ]
+    },
+    "renders": 805,
+    "firstPaintMs": 22.300000000017462,
+    "longTasks": [
+      91,
+      189
+    ],
+    "wallMs": 50171.20000000001,
+    "totalMs": 51224
+  },
+  "viewer": {
+    "counts": {
+      "backendInfo": 2,
+      "backendStatus": 4,
+      "systemSnapshot": 3,
+      "simulation.started": 1,
+      "simulation.chunk": 401,
+      "simulation.completed": 1
+    },
+    "snapshots": [
+      {
+        "type": "systemSnapshot",
+        "bytes": 5663,
+        "signals": 0
+      },
+      {
+        "type": "systemSnapshot",
+        "bytes": 5663,
+        "signals": 0
+      },
+      {
+        "type": "systemSnapshot",
+        "bytes": 13995131,
+        "signals": 23
+      }
+    ]
+  },
+  "resumeProbe": {
+    "snapshotRange": "0–0.10 s",
+    "afterChunkRange": "0–0.20 s",
+    "expectedStart": 0,
+    "laterChunkStart": 0.1
+  },
+  "actualReopen": {
+    "observedRanges": [
+      "0–0.06 s",
+      "0–0.07 s",
+      "0–0.08 s",
+      "0–0.09 s",
+      "0–0.10 s",
+      "0–0.11 s",
+      "0–0.12 s",
+      "0–0.13 s",
+      "0–0.14 s",
+      "0–0.15 s",
+      "0–0.16 s",
+      "0–0.17 s",
+      "0–0.18 s",
+      "0–0.19 s",
+      "0–0.20 s",
+      "0–0.21 s"
+    ],
+    "finalRange": "0–2 s"
+  }
+}
