@@ -34,7 +34,7 @@ jobs:
       - name: Install npm and Python dependencies
         run: |
           npm ci --prefix subject/frontend
-          npm install --prefix qa --no-save playwright-core@1.58.2
+          npm install --prefix qa --no-save playwright-core@1.64.1
           python -m pip install numpy scipy sympy pytest
       - name: Build and lint extension
         run: |

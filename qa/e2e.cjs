@@ -6,7 +6,7 @@ const { createRequire } = require('node:module');
 const root = path.resolve(process.env.SOURCE_ROOT || '.');
 const req = createRequire(path.join(root, 'frontend/package.json'));
 const { downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath, runTests } = req('@vscode/test-electron');
-const { chromium } = require('playwright-core');
+const { _electron } = require('playwright-core');
 const output = path.resolve('results');
 fs.mkdirSync(output, {recursive: true});
 const result = {sha: cp.execFileSync('git', ['rev-parse', 'HEAD'], {cwd: root, encoding:'utf8'}).trim(), checks: [], errors: []};
@@ -37,16 +37,16 @@ async function main() {
  fs.writeFileSync(path.join(userData,'User/settings.json'),JSON.stringify({'python.defaultInterpreterPath':python,'security.workspace.trust.enabled':false,'workbench.startupEditor':'none','telemetry.telemetryLevel':'off','workbench.sideBar.location':'left','window.zoomLevel':-1,'workbench.secondarySideBar.defaultVisibility':'hidden'}));
  const [cli,...cliArgs]=resolveCliArgsFromVSCodeExecutablePath(exe,{reuseMachineInstall:true});
  cp.execFileSync(cli,[...cliArgs,'--no-sandbox','--user-data-dir',userData,'--extensions-dir',extensions,'--install-extension','ms-python.python'],{stdio:'inherit',timeout:240000});
- const host=runTests({vscodeExecutablePath:exe,extensionDevelopmentPath:path.join(root,'frontend'),extensionTestsPath:path.resolve(__dirname,'host.cjs'),launchArgs:[root,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--skip-welcome','--skip-release-notes','--disable-workspace-trust','--remote-debugging-port=9222','--user-data-dir',userData,'--extensions-dir',extensions]});
- host.catch(e=>result.errors.push('host: '+e.message));
+ const app=await _electron.launch({executablePath:exe,args:[root,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--skip-welcome','--skip-release-notes','--disable-workspace-trust','--extensionDevelopmentPath='+path.join(root,'frontend'),'--extensionTestsPath='+path.resolve(__dirname,'host.cjs'),'--user-data-dir='+userData,'--extensions-dir='+extensions],timeout:60000});
+ const host=new Promise(resolve=>app.on('close',resolve));
  let browser,page;
  try {
   console.log('STAGE waiting for extension host');await until(()=>command('status'));
   console.log('STAGE connecting to VS Code renderer');
-  browser=await chromium.connectOverCDP('http://127.0.0.1:9222');
-  page=await until(()=>browser.contexts()[0].pages().find(p=>/workbench/.test(p.url())));
+  browser=app;
+  page=await app.firstWindow();
   page.on('pageerror',e=>result.errors.push(e.message));page.on('console',m=>{if(m.type()==='error')console.log('RENDERER_ERROR',m.text());});console.log('PAGES',page.context().pages().map(p=>p.url()));await command('viewer');
-  await page.setViewportSize({width:1800,height:1200});
+  await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setSize(1800,1200));
   const viewer=await frameFor(page,'.toolbar-topology');await instrument(viewer);console.log('STAGE topology webview ready');
   await viewer.getByRole('button',{name:'Start Python backend',exact:true}).click();
   await until(()=>viewer.locator('select[aria-label="System class"] option').count().then(n=>n>=9));
@@ -73,7 +73,7 @@ async function main() {
   check('simulation preserves topology drag',await viewer.locator('.react-flow__node[data-id="'+nodeId+'"]').getAttribute('style')===dragged);
   result.viewer=await viewer.evaluate(()=>({counts:qa.counts,snapshots:qa.messages}));
   check('viewer receives no streaming chunks',!result.viewer.counts['simulation.chunk'],result.viewer);
-  await page.screenshot({path:path.join(output,'simulation.png')});
+  await page.screenshot({path:path.join(output,'simulation.png')});console.log('QA_SCREENSHOT_SIMULATION', (await page.screenshot({type:'jpeg',quality:35})).toString('base64'));
   const range=await signals.locator('.time-controls output').innerText();
   await signals.getByTitle('Zoom in horizontally').click();const zoom=await signals.locator('.time-controls output').innerText();
   check('zoom changes time range',range!==zoom,{range,zoom});
@@ -102,7 +102,7 @@ async function main() {
   check('snapshot followed by later chunk retains earlier time range',result.resumeProbe.afterChunkRange.startsWith('0–'),result.resumeProbe);
   await viewer.getByRole('button',{name:'Stop Python backend',exact:true}).click();
   check('backend stopped',await until(()=>viewer.getByRole('button',{name:'Start Python backend',exact:true}).count()));
- } catch(e) {result.errors.push(e.stack);if(page){console.log('FAILURE_DOM',await page.locator('body').innerText().catch(()=>''));console.log('FRAMES',page.context().pages().map(p=>({url:p.url(),frames:p.frames().map(f=>f.url())})));for(const p of page.context().pages())for(const f of p.frames())console.log('FRAME_DOM',f.url(),(await f.locator('body').innerText().catch(()=>'' )).slice(0,4000));await page.screenshot({path:path.join(output,'failure.png')}).catch(()=>{});}throw e;}
+ } catch(e) {result.errors.push(e.stack);if(page){console.log('FAILURE_DOM',await page.locator('body').innerText().catch(()=>''));console.log('IFRAME_ELEMENTS',await page.locator('iframe').evaluateAll(es=>es.map(e=>e.outerHTML)));console.log('QA_SCREENSHOT_FAILURE',(await page.screenshot({type:'jpeg',quality:35})).toString('base64'));console.log('FRAMES',page.context().pages().map(p=>({url:p.url(),frames:p.frames().map(f=>f.url())})));for(const p of page.context().pages())for(const f of p.frames())console.log('FRAME_DOM',f.url(),(await f.locator('body').innerText().catch(()=>'' )).slice(0,4000));await page.screenshot({path:path.join(output,'failure.png')}).catch(()=>{});}throw e;}
  finally {fs.writeFileSync(path.join(output,'result.json'),JSON.stringify(result,null,2));console.log('QA_RESULT',JSON.stringify(result));await command('done').catch(()=>{});if(browser)await browser.close();await Promise.race([host,wait(5000)]);}
 }
 setTimeout(()=>{console.log('QA_TIMEOUT',JSON.stringify(result));process.exit(1);},9*60*1000).unref();
