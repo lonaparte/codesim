@@ -1,0 +1,48 @@
+name: CodeSim real VS Code streaming comparison
+on:
+  push:
+    branches: [codex/verify-ui-streaming-5b84992]
+permissions:
+  contents: read
+jobs:
+  vscode:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: before
+            sha: 08853cb9788b01fd36b1c799b2ff0c3c6889404c
+          - variant: after
+            sha: 5b8499241406b8b7e6543dc9fa8fb47641f0c4ea
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.sha }}
+          path: subject
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install npm and Python dependencies
+        run: |
+          npm ci --prefix subject/frontend
+          npm install --prefix qa --no-save playwright-core@1.58.2
+          python -m pip install numpy scipy sympy pytest
+      - name: Build and lint extension
+        run: |
+          npm run build --prefix subject/frontend
+          npm run lint --prefix subject/frontend
+      - name: Run in actual VS Code Extension Development Host
+        env:
+          SOURCE_ROOT: subject
+        run: xvfb-run -a -s '-screen 0 1920x1200x24' node qa/e2e.cjs 2>&1 | tee vscode-e2e.log
+      - name: Print test summary (logs only, no artifact or cache storage)
+        if: always()
+        run: |
+          if test -f results/result.json; then cat results/result.json; fi
+          if test -f results/result.json; then cat results/result.json >> "$GITHUB_STEP_SUMMARY"; fi
