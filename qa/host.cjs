@@ -10,6 +10,7 @@ exports.run = async function () {
     const server = http.createServer(async (req, res) => {
       try {
         if (req.url === '/signals') await vscode.commands.executeCommand('codesim-frontend.openSignals');
+        if (req.url === '/closeSignals') await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
         if (req.url === '/closePanel') await vscode.commands.executeCommand('workbench.action.closePanel');
         if (req.url === '/viewer') await vscode.commands.executeCommand('codesim-frontend.openViewer');
         if (req.url === '/done') { res.end('done'); server.close(); resolve(); return; }

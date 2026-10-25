@@ -24,7 +24,7 @@ async function instrument(frame) {
       const m=e.data;if(!m?.type)return;const q=window.qa;q.counts[m.type]=(q.counts[m.type]||0)+1;
       if(m.type==='simulation.started'){q.started=performance.now();q.samples={};q.chunks=0;q.firstChunk=null;q.firstPaint=null;q.renders=0;q.longTasks=[];q.final=null;}
       if(m.type==='simulation.chunk'){q.chunks++;q.firstChunk??=performance.now();for(const s of m.signals||[]){const x=q.samples[s.id]??={time:[],values:[]};x.time.push(...s.time);x.values.push(...s.values);}}
-      if(m.type==='systemSnapshot'){q.lastSnapshot=m.snapshot;q.messages.push({type:m.type,reason:m.reason,bytes:JSON.stringify(m).length,signals:m.snapshot?.signals?.length});if(q.started!==null && m.snapshot?.signals?.length){const final=m.snapshot.signals;q.final={at:performance.now(),signals:final.length,points:final[0]?.time.length,streamEqualsFinal:final.every(s=>JSON.stringify(s.time)===JSON.stringify(q.samples[s.id]?.time)&&JSON.stringify(s.values)===JSON.stringify(q.samples[s.id]?.values))};}}
+      if(m.type==='systemSnapshot'){q.lastSnapshot=m.snapshot;q.messages.push({type:m.type,reason:m.reason,bytes:JSON.stringify(m).length,signals:m.snapshot?.signals?.length});if(q.started!==null && m.snapshot?.signals?.length){const final=m.snapshot.signals;const differences=[];for(const s of final){const streamed=q.samples[s.id];for(const field of ['time','values']){const a=streamed?.[field]||[],b=s[field];let maxDifference=0,maxAngleAdjustedDifference=0;for(let i=0;i<Math.min(a.length,b.length);i++){const d=Math.abs(a[i]-b[i]);maxDifference=Math.max(maxDifference,d);maxAngleAdjustedDifference=Math.max(maxAngleAdjustedDifference,Math.min(d%360,360-d%360));}if(a.length!==b.length||maxDifference>1e-9)differences.push({id:s.id,field,streamLength:a.length,finalLength:b.length,maxDifference,maxAngleAdjustedDifference});}}q.final={at:performance.now(),signals:final.length,points:final[0]?.time.length,streamEqualsFinal:differences.length===0,differences};}}
     });
   });
 }
@@ -100,10 +100,21 @@ async function main() {
     return {snapshotRange,afterChunkRange:document.querySelector('.time-controls output').textContent,expectedStart:original.signals[0].time[0],laterChunkStart:later[0].time[0]};
   });
   check('snapshot followed by later chunk retains earlier time range',result.resumeProbe.afterChunkRange.startsWith('0–'),result.resumeProbe);
+  // Exercise actual panel disposal/reopening while the real Python solver runs.
+  await signals.getByRole('button',{name:'Simulate',exact:true}).click();
+  await until(()=>signals.evaluate(()=>qa.chunks>=10));
+  await command('closeSignals');await command('signals');
+  const reopened=await frameFor(page,'.toolbar-signals');
+  const observed=[];const probeEnd=Date.now()+3000;
+  while(Date.now()<probeEnd){const range=await reopened.locator('.time-controls output').innerText();if(observed.at(-1)!==range)observed.push(range);await wait(100);}
+  await until(()=>reopened.getByRole('button',{name:'Simulate',exact:true}).isEnabled(),240000);
+  await command('closePanel');await wait(400);
+  result.actualReopen={observedRanges:observed,finalRange:await reopened.locator('.time-controls output').innerText()};
+  check('actual mid-run panel reopening preserves prefix',observed.every(s=>s.startsWith('0–')),result.actualReopen);
   await viewer.getByRole('button',{name:'Stop Python backend',exact:true}).click();
   check('backend stopped',await until(()=>viewer.getByRole('button',{name:'Start Python backend',exact:true}).count()));
  } catch(e) {result.errors.push(e.stack);if(page){console.log('FAILURE_DOM',await page.locator('body').innerText().catch(()=>''));console.log('IFRAME_ELEMENTS',await page.locator('iframe').evaluateAll(es=>es.map(e=>e.outerHTML)));console.log('QA_SCREENSHOT_FAILURE',(await page.screenshot({type:'jpeg',quality:35})).toString('base64'));console.log('FRAMES',page.context().pages().map(p=>({url:p.url(),frames:p.frames().map(f=>f.url())})));for(const p of page.context().pages())for(const f of p.frames())console.log('FRAME_DOM',f.url(),(await f.locator('body').innerText().catch(()=>'' )).slice(0,4000));await page.screenshot({path:path.join(output,'failure.png')}).catch(()=>{});}throw e;}
  finally {fs.writeFileSync(path.join(output,'result.json'),JSON.stringify(result,null,2));console.log('QA_RESULT',JSON.stringify(result));await command('done').catch(()=>{});if(browser)await browser.close();await Promise.race([host,wait(5000)]);}
 }
 setTimeout(()=>{console.log('QA_TIMEOUT',JSON.stringify(result));process.exit(1);},9*60*1000).unref();
-main().then(()=>process.exit(0)).catch(e=>{console.error(e);process.exit(1);});
+main().then(()=>process.exit(result.sha.startsWith('5b84992')&&result.checks.some(c=>!c.pass&&(c.name.includes('retains earlier')||c.name.includes('actual mid-run')))?1:0)).catch(e=>{console.error(e);process.exit(1);});
