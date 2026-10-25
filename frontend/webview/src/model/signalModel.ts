@@ -94,8 +94,10 @@ export class SimulationSignalBuffer {
   private signals = new Map<string, SignalDescriptor>();
   private dirty = false;
 
-  reset(): void {
+  reset(initial: readonly SignalDescriptor[] = []): void {
     this.signals = new Map();
+    this.append(initial, false);
+    // A supplied snapshot is already displayed; only later chunks need a flush.
     this.dirty = false;
   }
 

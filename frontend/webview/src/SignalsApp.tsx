@@ -67,9 +67,9 @@ export function SignalsApp() {
     };
 
     const unsubscribeSnapshot = onSystemSnapshot((next) => {
-      // A full snapshot supersedes anything still buffered from the stream.
+      // Seed the buffer so later chunks extend the snapshot when reopening mid-run.
       cancelFlush();
-      buffer.reset();
+      buffer.reset(next.signals);
       setSnapshot(next);
     });
     const unsubscribeStarted = onSimulationStarted(() => {
