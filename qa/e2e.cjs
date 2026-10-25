@@ -117,4 +117,4 @@ async function main() {
  finally {fs.writeFileSync(path.join(output,'result.json'),JSON.stringify(result,null,2));console.log('QA_RESULT',JSON.stringify(result));await command('done').catch(()=>{});if(browser)await browser.close();await Promise.race([host,wait(5000)]);}
 }
 setTimeout(()=>{console.log('QA_TIMEOUT',JSON.stringify(result));process.exit(1);},9*60*1000).unref();
-main().then(()=>process.exit(result.sha.startsWith('5b84992')&&result.checks.some(c=>!c.pass&&(c.name.includes('retains earlier')||c.name.includes('actual mid-run')))?1:0)).catch(e=>{console.error(e);process.exit(1);});
+main().then(()=>process.exit(result.checks.some(c=>!c.pass&&c.name!=='streamed data matches final snapshot')?1:0)).catch(e=>{console.error(e);process.exit(1);});

@@ -15,10 +15,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - variant: before
-            sha: 08853cb9788b01fd36b1c799b2ff0c3c6889404c
-          - variant: after
-            sha: 5b8499241406b8b7e6543dc9fa8fb47641f0c4ea
+          - variant: fixed
+            sha: 63c818599f11581f4b594841499b14eaabfccb70
     steps:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
