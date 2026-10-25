@@ -12,8 +12,8 @@ fs.mkdirSync(output, {recursive: true});
 const result = {sha: cp.execFileSync('git', ['rev-parse', 'HEAD'], {cwd: root, encoding:'utf8'}).trim(), checks: [], errors: []};
 const wait = ms => new Promise(r => setTimeout(r, ms));
 async function until(fn, timeout = 120000) { const end = Date.now()+timeout; let error; while (Date.now()<end) {try {const v=await fn(); if(v)return v;}catch(e){error=e;} await wait(300);} throw Error('Timeout: '+(error?.message||fn.toString())); }
-async function command(name) {const r=await fetch('http://127.0.0.1:9333/'+name); if(!r.ok)throw Error(await r.text());return r.json().catch(()=>null);}
-async function frameFor(page, selector) {return until(async()=>{for(const f of page.frames())if(await f.locator(selector).count())return f;});}
+async function command(name) {const r=await fetch('http://127.0.0.1:9333/'+name,{signal:AbortSignal.timeout(5000)}); if(!r.ok)throw Error(await r.text());return r.json().catch(()=>null);}
+async function frameFor(page, selector) {return until(async()=>{for(const p of page.context().pages())for(const f of p.frames())if(await f.locator(selector).count())return f;},45000);}
 function check(name, pass, detail) {result.checks.push({name, pass:!!pass, detail});console.log('CHECK', JSON.stringify(result.checks.at(-1)));}
 async function instrument(frame) {
   await frame.evaluate(()=>{
@@ -35,18 +35,19 @@ async function main() {
  fs.mkdirSync(path.join(userData,'User'),{recursive:true});
  const python=cp.execFileSync('python',['-c','import sys;print(sys.executable)'],{encoding:'utf8'}).trim();
  fs.writeFileSync(path.join(userData,'User/settings.json'),JSON.stringify({'python.defaultInterpreterPath':python,'security.workspace.trust.enabled':false,'workbench.startupEditor':'none','telemetry.telemetryLevel':'off','workbench.sideBar.location':'left','window.zoomLevel':-1,'workbench.secondarySideBar.defaultVisibility':'hidden'}));
- const [cli,...cliArgs]=resolveCliArgsFromVSCodeExecutablePath(exe);
+ const [cli,...cliArgs]=resolveCliArgsFromVSCodeExecutablePath(exe,{reuseMachineInstall:true});
  cp.execFileSync(cli,[...cliArgs,'--no-sandbox','--user-data-dir',userData,'--extensions-dir',extensions,'--install-extension','ms-python.python'],{stdio:'inherit',timeout:240000});
  const host=runTests({vscodeExecutablePath:exe,extensionDevelopmentPath:path.join(root,'frontend'),extensionTestsPath:path.resolve(__dirname,'host.cjs'),launchArgs:[root,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--skip-welcome','--skip-release-notes','--disable-workspace-trust','--remote-debugging-port=9222','--user-data-dir',userData,'--extensions-dir',extensions]});
  host.catch(e=>result.errors.push('host: '+e.message));
  let browser,page;
  try {
-  await until(()=>command('status'));
+  console.log('STAGE waiting for extension host');await until(()=>command('status'));
+  console.log('STAGE connecting to VS Code renderer');
   browser=await chromium.connectOverCDP('http://127.0.0.1:9222');
   page=await until(()=>browser.contexts()[0].pages().find(p=>/workbench/.test(p.url())));
-  page.on('pageerror',e=>result.errors.push(e.message));
+  page.on('pageerror',e=>result.errors.push(e.message));page.on('console',m=>{if(m.type()==='error')console.log('RENDERER_ERROR',m.text());});console.log('PAGES',page.context().pages().map(p=>p.url()));await command('viewer');
   await page.setViewportSize({width:1800,height:1200});
-  const viewer=await frameFor(page,'.toolbar-topology');await instrument(viewer);
+  const viewer=await frameFor(page,'.toolbar-topology');await instrument(viewer);console.log('STAGE topology webview ready');
   await viewer.getByRole('button',{name:'Start Python backend',exact:true}).click();
   await until(()=>viewer.locator('select[aria-label="System class"] option').count().then(n=>n>=9));
   check('real Python backend starts',true);
@@ -84,9 +85,25 @@ async function main() {
   await wait(400);await command('closePanel');
   check('small-signal snapshot received',await signals.evaluate(()=>!!qa.lastSnapshot?.smallSignal));
   await page.screenshot({path:path.join(output,'small-signal.png')});
+  await signals.locator('.results-tabs').getByRole('button',{name:'Time domain',exact:true}).click();
+  // Controlled replay of a real snapshot followed by a later stream chunk.
+  // This is the protocol seen when a Signals panel is opened mid-simulation.
+  result.resumeProbe=await signals.evaluate(async()=>{
+    const original=qa.lastSnapshot;
+    const cut=1000,end=2000;
+    const initial={...original,signals:original.signals.map(s=>({...s,time:s.time.slice(0,cut),values:s.values.slice(0,cut)}))};
+    window.postMessage({type:'simulation.started'},'*');await new Promise(r=>setTimeout(r,100));
+    window.postMessage({type:'systemSnapshot',reason:'request',snapshot:initial},'*');await new Promise(r=>setTimeout(r,300));
+    const snapshotRange=document.querySelector('.time-controls output').textContent;
+    const later=original.signals.map(s=>({...s,time:s.time.slice(cut,end),values:s.values.slice(cut,end)}));
+    window.postMessage({type:'simulation.chunk',sequence:1,signals:later},'*');await new Promise(r=>setTimeout(r,1400));
+    return {snapshotRange,afterChunkRange:document.querySelector('.time-controls output').textContent,expectedStart:original.signals[0].time[0],laterChunkStart:later[0].time[0]};
+  });
+  check('snapshot followed by later chunk retains earlier time range',result.resumeProbe.afterChunkRange.startsWith('0–'),result.resumeProbe);
   await viewer.getByRole('button',{name:'Stop Python backend',exact:true}).click();
   check('backend stopped',await until(()=>viewer.getByRole('button',{name:'Start Python backend',exact:true}).count()));
- } catch(e) {result.errors.push(e.stack);if(page)await page.screenshot({path:path.join(output,'failure.png')}).catch(()=>{});throw e;}
- finally {fs.writeFileSync(path.join(output,'result.json'),JSON.stringify(result,null,2));console.log('QA_RESULT',JSON.stringify(result));await command('done').catch(()=>{});if(browser)await browser.close();await host;}
+ } catch(e) {result.errors.push(e.stack);if(page){console.log('FAILURE_DOM',await page.locator('body').innerText().catch(()=>''));console.log('FRAMES',page.context().pages().map(p=>({url:p.url(),frames:p.frames().map(f=>f.url())})));for(const p of page.context().pages())for(const f of p.frames())console.log('FRAME_DOM',f.url(),(await f.locator('body').innerText().catch(()=>'' )).slice(0,4000));await page.screenshot({path:path.join(output,'failure.png')}).catch(()=>{});}throw e;}
+ finally {fs.writeFileSync(path.join(output,'result.json'),JSON.stringify(result,null,2));console.log('QA_RESULT',JSON.stringify(result));await command('done').catch(()=>{});if(browser)await browser.close();await Promise.race([host,wait(5000)]);}
 }
-main().catch(e=>{console.error(e);process.exitCode=1;});
+setTimeout(()=>{console.log('QA_TIMEOUT',JSON.stringify(result));process.exit(1);},9*60*1000).unref();
+main().then(()=>process.exit(0)).catch(e=>{console.error(e);process.exit(1);});

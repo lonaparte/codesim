@@ -4,6 +4,9 @@ on:
     branches: [codex/verify-ui-streaming-5b84992]
 permissions:
   contents: read
+concurrency:
+  group: codesim-ui-streaming-verification
+  cancel-in-progress: true
 jobs:
   vscode:
     runs-on: ubuntu-24.04
@@ -40,7 +43,9 @@ jobs:
       - name: Run in actual VS Code Extension Development Host
         env:
           SOURCE_ROOT: subject
-        run: xvfb-run -a -s '-screen 0 1920x1200x24' node qa/e2e.cjs 2>&1 | tee vscode-e2e.log
+        run: |
+          set -o pipefail
+          xvfb-run -a -s '-screen 0 1920x1200x24' node qa/e2e.cjs 2>&1 | tee vscode-e2e.log
       - name: Print test summary (logs only, no artifact or cache storage)
         if: always()
         run: |
